@@ -8,6 +8,7 @@
 import Foundation
 import Firebase
 import CoreLocation
+import MapKit
 
 
 struct LocationAlert : Identifiable, Hashable {
@@ -23,12 +24,15 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
     @Published var locationAlerts: [LocationAlert] = []
     private var locationManager = CLLocationManager()
     @Published var userLocation: CLLocation?
+    @Published var locationString = ""
 
+    
     override init() {
         super.init()
         self.locationManager.delegate = self
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
         self.locationManager.requestWhenInUseAuthorization()
+        
     }
     
     // Respond to authorization status changes
@@ -43,6 +47,7 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
             case .authorizedWhenInUse, .authorizedAlways:
                 // Permission granted, start location updates
                 manager.startUpdatingLocation()
+                listenForNearbyAlerts()
             @unknown default:
                 break
         }
@@ -52,35 +57,26 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         DispatchQueue.main.async { [weak self] in
-            self?.userLocation = location // Update published userLocation
+            self?.userLocation = location
         }
     }
+
+    
     
     func listenForNearbyAlerts() {
-            guard let userLocation = self.userLocation else {
-                print("User location is not available.")
-                return
-            }
-            
-            let db = Firestore.firestore()
-            let locationAlertsCollection = db.collection("locationAlerts")
-            
-            // Constants for calculating the radius
-            let earthRadiusMiles = 3958.8
-            let radiusMiles = 10.0
-            let maxLatitude = userLocation.coordinate.latitude + (radiusMiles / earthRadiusMiles) * (180 / .pi)
-            let minLatitude = userLocation.coordinate.latitude - (radiusMiles / earthRadiusMiles) * (180 / .pi)
-            
-            // Assuming longitude calculations are simplified and ignoring edge cases
-            let maxLongitude = userLocation.coordinate.longitude + (radiusMiles / earthRadiusMiles) * (180 / .pi) / cos(userLocation.coordinate.latitude * .pi / 180)
-            let minLongitude = userLocation.coordinate.longitude - (radiusMiles / earthRadiusMiles) * (180 / .pi) / cos(userLocation.coordinate.latitude * .pi / 180)
-            
-            // Firestore query for documents within the latitude and longitude bounds
-            locationAlertsCollection.whereField("latitude", isGreaterThan: minLatitude)
-                                    .whereField("latitude", isLessThan: maxLatitude)
-                                    .whereField("longitude", isGreaterThan: minLongitude)
-                                    .whereField("longitude", isLessThan: maxLongitude)
-                                    .addSnapshotListener { (querySnapshot, error) in
+        print("Fetching all global alerts from the last 24 hours")
+
+        let db = Firestore.firestore()
+        let locationAlertsCollection = db.collection("locationAlerts")
+
+        // Calculate the timestamp for 24 hours ago
+        let oneDayAgo = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        let oneDayAgoTimestamp = Timestamp(date: oneDayAgo)
+
+        // Firestore query for documents sent in the last 24 hours
+        locationAlertsCollection
+            .whereField("dateSent", isGreaterThan: oneDayAgoTimestamp)
+            .addSnapshotListener { (querySnapshot, error) in
                 guard let documents = querySnapshot?.documents else {
                     print("Error fetching documents: \(error!)")
                     return
@@ -98,12 +94,14 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
                 }
                 
                 DispatchQueue.main.async {
+                    print("Got global location alerts : \(alerts)")
                     self.locationAlerts = alerts
                 }
             }
-        }
+    }
+
     
-    private func sendLocationAlert() {
+    func sendLocationAlert() {
         // Ensure there's a valid user location to work with
         guard let userLocation = self.userLocation else {
             print("User location is not available.")
@@ -114,14 +112,15 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
         let locationAlertsCollection = db.collection("locationAlerts")
         
         // Assume you have a way to obtain the current user's ID
-        let userID = "someUserID" // This should be replaced with the actual user ID retrieval logic
+        let userID = "anonymous" // This should be replaced with the actual user ID retrieval logic
 
         // Create a dictionary representing the data to save
         let alertData: [String: Any] = [
             "latitude": userLocation.coordinate.latitude,
             "longitude": userLocation.coordinate.longitude,
             "userID": userID,
-            "dateSent": Timestamp(date: Date()) // Firestore Timestamp object
+            "dateSent": Timestamp(date: Date()),
+            "locationString" : self.locationString
         ]
 
         // Add a new document to the "locationAlerts" collection
@@ -132,6 +131,88 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
             } else {
                 // Document was added successfully
                 print("Location alert sent successfully.")
+                self.sendAlertToAllUsers()
+            }
+        }
+    }
+    
+    
+    /// Sends a notification request to the server.
+    /// - Parameters:
+    ///   - deviceToken: The device token as a string.
+    ///   - alert: The message for the alert.
+    ///   - badge: The badge number for the app icon.
+    func sendNotification(deviceToken: String, alert: String, badge: Int) {
+        // Ensure the URL matches your server's endpoint
+        guard let url = URL(string: "https://locale-ios-d4e8c531cbbe.herokuapp.com/sendNotification/") else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Construct the JSON body with the device token, alert, and badge
+        let body: [String: Any] = [
+            "token": deviceToken,
+            "alert": alert,
+            "badge": badge,
+            "sound": "default"  // Assuming your server expects this; adjust as needed
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+        } catch {
+            print("Failed to serialize JSON body: \(error.localizedDescription)")
+            return
+        }
+        
+        // Create and start a data task to send the request
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            // Handle the response or error
+            if let error = error {
+                print("Client error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                print("Server returned an error")
+                return
+            }
+            
+            print("Notification sent successfully")
+        }
+        
+        task.resume()
+    }
+    
+    
+    /// Fetches users with `isPushOn` set to true and sends a notification to each.
+    func sendAlertToAllUsers() {
+        let db = Firestore.firestore() // Reference to Firestore
+        let usersCollection = db.collection("users") // Assuming your user data is stored in a collection named "users"
+        
+        // Query the users collection for users with isPushOn == true
+        usersCollection.whereField("isPushOn", isEqualTo: true).getDocuments { (querySnapshot, err) in
+            if let err = err {
+                print("Error getting documents: \(err)")
+            } else {
+                // Loop through the documents returned
+                for document in querySnapshot!.documents {
+                    guard let pushToken = document.data()["pushToken"] as? String else {
+                        print("Push token not found for user: \(document.documentID)")
+                        continue
+                    }
+                    
+                    // Assuming you have a predefined alert message and badge number
+                    let alertMessage = "New location alert"
+                    let badgeNumber = 1 // Customize this as necessary
+                    
+                    // Send a notification to each user with isPushOn == true
+                    self.sendNotification(deviceToken: pushToken, alert: alertMessage, badge: badgeNumber)
+                }
             }
         }
     }

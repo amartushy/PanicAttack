@@ -22,20 +22,43 @@ struct SideMenuView: View {
         "Profile" : "account-profile",
         "Settings" : "account-settings",
         "Privacy Policy" : "account-privacy",
-        "Terms and Conditions" : "account-terms",
+        "Terms of Service" : "account-terms",
         "About Us" : "account-about",
         "Support" : "account-support",
         "Logout" : "account-logout"
     ]
     
     let menuItemOrder: [String] = [
-        "Profile", "Settings", "Privacy Policy", "Terms and Conditions",
+        "Profile", "Settings", "Privacy Policy", "Terms of Service",
         "About Us", "Support", "Logout"
     ]
     
     @State var showProfile = false
     @State var showLogout = false
     
+    
+    @State var showImagePicker: Bool = false
+    @State var selectedImage: UIImage?
+    
+    private func handleImageSelection(_ image: UIImage) {
+         currentUser.uploadProfileImage(image) { result in
+             switch result {
+             case .success(let url):
+                 currentUser.updateUserProfilePhotoURL(url) { result in
+                     switch result {
+                     case .success():
+                         print("New Profile Image : \(currentUser.user.profilePhoto)")
+                         print("User profile updated successfully")
+                         currentUser.refreshID = UUID()
+                     case .failure(let error):
+                         print("Error updating user profile: \(error.localizedDescription)")
+                     }
+                 }
+             case .failure(let error):
+                 print("Error uploading image: \(error.localizedDescription)")
+             }
+         }
+     }
     
     var profilePhoto = "profile-2"
     
@@ -44,45 +67,23 @@ struct SideMenuView: View {
         HStack {
             VStack {
                 
-                VStack {
-                    if ( currentUser.user.profilePhoto == "") {
-                        
-                        if currentUser.user.name != "" {
-                            Text(getInitials(fullName: currentUser.user.name))
-                                .font(.system(size: 24))
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(Color("16171D"))
-                                .frame(width: 80, height: 80)
-                                .background(Color(red: 0.95, green: 0.95, blue: 0.95))
-                                .cornerRadius(100)
-                                .outerShadow()
-
-                            
-                        } else {
-                            Image(systemName: "person.fill")
-                                .font(Font.custom("Avenir Next", size: 40))
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(Color("placeholder"))
-                                .frame(width: 80, height: 80)
-                                .background(Color("background-element"))
-                                .cornerRadius(100)
-                                .outerShadow()
-                        }
-                        
-                    } else {
-                        CachedAsyncImageView(urlString: currentUser.user.profilePhoto)
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                            .overlay {
-                                Circle().stroke(.white, lineWidth: 1)
-                            }
-                            .outerShadow()
-
-                    }
+                Button {
+                    self.showImagePicker = true
+                } label: {
+                    ProfilePhotoOrInitial(profilePhoto: currentUser.user.profilePhoto, fullName: currentUser.user.name, radius: 80, fontSize: 24)
+                        .padding(.top, 60)
+                        .padding(.bottom, 20)
                 }
-                .padding(.top, 60)
-                .padding(.bottom, 20)
+                .sheet(isPresented: $showImagePicker, onDismiss: {
+                    if let selectedImage = self.selectedImage {
+                        handleImageSelection(selectedImage)
+                    }
+                }) {
+                    ImagePicker(image: self.$selectedImage)
+                }
+                .id(currentUser.refreshID)
+
+
 
                 
                 Spacer().frame(height : 20)
@@ -97,8 +98,13 @@ struct SideMenuView: View {
                             } else if key == "Profile" {
                                 self.showProfile = true
                                 showAccountMenu = false
-                                
+                            } else if key == "Settings" {
+                                currentUser.showSettings = true
+                            } else if key == "Terms of Service" {
+                                currentUser.showTOS = true
                             }
+                            
+                            
                         }, label: {
                             HStack {
                                 Image(menuItems[key] ?? "")

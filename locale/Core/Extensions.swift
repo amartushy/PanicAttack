@@ -12,6 +12,22 @@ import SwiftUI
 
 
 extension View {
+    func outerShadow(applyShadow: Bool = true) -> some View {
+        Group {
+            if applyShadow {
+                self
+                    .shadow(color: Color("shadow-white"), radius: 1, x: -1, y: -1)
+                    .shadow(color: Color("shadow-black"), radius: 3, x: 2, y: 2)
+            } else {
+                self
+            }
+        }
+    }
+}
+
+
+
+extension View {
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
         clipShape( RoundedCorner(radius: radius, corners: corners) )
     }
@@ -28,19 +44,7 @@ struct RoundedCorner: Shape {
     }
 }
 
-extension View {
-    func outerShadow(applyShadow: Bool = true) -> some View {
-        Group {
-            if applyShadow {
-                self
-                    .shadow(color: Color("shadow-white"), radius: 1, x: -1, y: -1)
-                    .shadow(color: Color("shadow-black"), radius: 3, x: 2, y: 2)
-            } else {
-                self
-            }
-        }
-    }
-}
+
 
 
 
@@ -74,7 +78,7 @@ struct TopDownSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .offset(y: isPresented ? 0 : -UIScreen.main.bounds.height)
-            .animation(.easeInOut, value: isPresented)
+            .animation(.easeInOut(duration: 0.3), value: isPresented)
 
     }
 }
@@ -99,6 +103,12 @@ struct BottomUpSheetModifier: ViewModifier {
     }
 }
 
+// Extension to use the modifier easily
+extension View {
+    func bottomUpSheet(isPresented: Bool) -> some View {
+        self.modifier(BottomUpSheetModifier(isPresented: isPresented))
+    }
+}
 
 
 struct LeadingEdgeSheetModifier: ViewModifier {
@@ -120,9 +130,30 @@ extension View {
 
 
 
-// Extension to use the modifier easily
-extension View {
-    func bottomUpSheet(isPresented: Bool) -> some View {
-        self.modifier(BottomUpSheetModifier(isPresented: isPresented))
+struct TrailingEdgeSheetModifier: ViewModifier {
+    let isPresented: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .offset(x: isPresented ? 0 : UIScreen.main.bounds.width)
+            .animation(.easeInOut(duration: 0.3), value: isPresented)
     }
 }
+
+// Extension to use the modifier easily
+extension View {
+    func trailingEdgeSheet(isPresented: Bool) -> some View {
+        self.modifier(TrailingEdgeSheetModifier(isPresented: isPresented))
+    }
+}
+
+
+
+
+#if canImport(UIKit)
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+#endif

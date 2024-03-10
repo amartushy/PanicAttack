@@ -12,7 +12,8 @@ import SwiftUI
 
 struct TOSView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
-
+    @EnvironmentObject var currentUser : CurrentUserViewModel
+    
     var showTOS : Binding<Bool>?
     
     var body: some View {
@@ -22,12 +23,8 @@ struct TOSView: View {
             VStack(alignment : .leading) {
                 HStack(spacing: 0) {
                     Button(action: {
-                        if let showTOS = showTOS {
-                            showTOS.wrappedValue = false
-                        } else {
-                            self.presentationMode.wrappedValue.dismiss()
-                            
-                        }
+
+                        currentUser.showTOS = false
                         
                     }) {
                         Image(systemName: (showTOS != nil) ? "xmark" : "arrow.left")

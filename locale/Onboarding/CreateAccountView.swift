@@ -6,11 +6,12 @@
 //
 
 import SwiftUI
-
+import Firebase
+import FirebaseAuth
 
 struct CreateAccountView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
-    
+    @EnvironmentObject var currentUser : CurrentUserViewModel
     
     @State private var email: String = ""
     @State private var password: String = ""
@@ -22,10 +23,10 @@ struct CreateAccountView: View {
 
     @State var showErrorMessageModal = false
     @State var errorTitle = "Something went wrong"
-    @State var errorMessage = "There seems to be an issue. Please try again or contact support if the problem continues \n\n www.tutortree.com/support"
+    @State var errorMessage = "There seems to be an issue. Please try again or contact support if the problem continues"
     
     @State private var isLoading: Bool = false
-    @State private var navigateToChooseSchool: Bool = false
+    @State private var navigateToHome: Bool = false
 
     private func createAccount() {
         withAnimation {
@@ -49,17 +50,17 @@ struct CreateAccountView: View {
             } else {
                 isLoading = true
                 
-//                currentUser.createUser(email: email, password: password) { success, errorMessage in
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { // Ensure minimum 2 seconds loading
-//                        isLoading = false
-//                        if success {
-//                            navigateToChooseSchool = true
-//                        } else {
-//                            showErrorMessageModal = true
-//                            formatErrorMessage(errorDescription: errorMessage)
-//                        }
-//                    }
-//                }
+                currentUser.createUser(email: email, password: password) { success, errorMessage in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { // Ensure minimum 2 seconds loading
+                        isLoading = false
+                        if success {
+                            navigateToHome = true
+                        } else {
+                            showErrorMessageModal = true
+                            formatErrorMessage(errorDescription: errorMessage)
+                        }
+                    }
+                }
             }
         }
 
@@ -103,7 +104,7 @@ struct CreateAccountView: View {
                         }) {
                             Image(systemName: "arrow.left")
                                 .font(Font.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color("text-bold"))
+                                .foregroundColor(Color(.white))
                                 .opacity(0.7)
                                 .frame(width: 40, height: 40)
                                 .background(
@@ -148,46 +149,30 @@ struct CreateAccountView: View {
                 
                 Spacer()
                 
-                ZStack {
+                Button {
+                    self.createAccount()
+                } label: {
                     HStack {
                         Spacer()
-                        
-                        RoundedRectangle(cornerRadius: 100.0)
-                            .frame(width: 25, height : 6)
-                        
-                        Circle()
-                            .frame(width: 6, height : 6)
-                        
-                        Circle()
-                            .frame(width: 6, height : 6)
-                        
-                        Circle()
-                            .frame(width: 6, height : 6)
-
+                        Text("CREATE ACCOUNT")
+                            .font(.system(size: 14, weight : .semibold))
+                            .foregroundColor(.white)
                         Spacer()
                     }
-                    
-                    HStack {
-
-                        Spacer()
-                        
-                        
-                        Button(action: {
-                            self.createAccount()
-                        }) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                                .frame(width : 50, height : 50)
-                                .background(Color("toggleOn"))
-                                .cornerRadius(100)
-                                .shadow(color: Color("shadow-black"), radius: 3, x: 2, y: 2)
-
-                        }
+                    .frame(height : 50)
+                    .background {
+                        Color.blue
                     }
-                    .padding(.leading)
+                    .cornerRadius(10)
+                    .outerShadow()
 
                 }
+                .padding(.bottom, 20)
+                .padding(.horizontal)
+                .navigationDestination(isPresented: $navigateToHome) {
+                    HomeView()
+                }
+
             }
             .padding()
             .overlay {
@@ -289,17 +274,7 @@ struct LoadingView: View {
             Color.black.opacity(0.4).edgesIgnoringSafeArea(.all)
             
             VStack {
-                Image("tree-rings") // Ensure your image is named correctly
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                    .onAppear() {
-                        withAnimation(Animation.linear(duration: 8).repeatForever(autoreverses: false)) {
-                            isAnimating = true
-                        }
-                    }
-                
+                ProgressView()
                 
                 Text("Creating your account..")
                     .font(.system( size: 18, weight : .semibold ))
@@ -319,5 +294,5 @@ struct LoadingView: View {
 
 
 #Preview {
-    CreateView()
+    CreateAccountView()
 }

@@ -92,17 +92,25 @@ struct CreateNewLocationView: View {
             
             Button {
                 locationVM.sendLocationAlert()
+                showSheet.toggle()
+
             } label: {
+                
                 HStack {
                     Spacer()
-                    Text("CONFIRM")
-                        .font(.system(size: 14, weight : .semibold))
+
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.white)
+                    Text("PANIC")
+                        .font(.system(size: 18, weight : .bold))
                         .foregroundColor(.white)
                     Spacer()
+
                 }
+                .padding()
                 .frame(height : 50)
                 .background {
-                    Color.blue
+                    Color.red
                 }
                 .cornerRadius(10)
                 .outerShadow()
@@ -113,7 +121,7 @@ struct CreateNewLocationView: View {
 
         }
         .background(Color("background"))
-        .frame(height: 600)
+        .frame(height: 500)
 
     }
 }

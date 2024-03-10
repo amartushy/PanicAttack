@@ -62,6 +62,15 @@ class CurrentUserViewModel: ObservableObject {
                                       lng : 0.0 )
     
     
+    //Navigation
+    @Published var showSettings : Bool = false
+    @Published var showTOS : Bool = false
+    @Published var showPrivacyPolicy : Bool = false
+    @Published var showAboutUs : Bool = false
+    
+    //Refresh ID to force view updates (Photo selection..)
+    @Published var refreshID = UUID()
+
     
     //Handles real-time authentication changes to conditionally display login/home views
     var didChange = PassthroughSubject<CurrentUserViewModel, Never>()
@@ -167,7 +176,7 @@ class CurrentUserViewModel: ObservableObject {
                                    isPushOn: false,
                                    name: "",
                                    profilePhoto: "",
-                                   pushToken: "",
+                                   pushToken: self.delegate.deviceToken,
                                    lat: 0.0,
                                    lng: 0.0)
 
@@ -217,6 +226,84 @@ class CurrentUserViewModel: ObservableObject {
     }
     
     
+    
+    
+    // Function to upload image to Firebase Storage
+    func uploadProfileImage(_ image: UIImage, completion: @escaping (Result<URL, Error>) -> Void) {
+        let imageData = image.jpegData(compressionQuality: 0.4)
+        let storageRef = Storage.storage().reference().child("profileImages/\(self.currentUserID).jpg")
+
+        storageRef.putData(imageData!, metadata: nil) { metadata, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            storageRef.downloadURL { url, error in
+                if let error = error {
+                    completion(.failure(error))
+                } else if let url = url {
+                    completion(.success(url))
+                }
+            }
+        }
+    }
+    
+    // Function to update user's profile photo URL in Firestore
+    func updateUserProfilePhotoURL(_ url: URL, completion: @escaping (Result<Void, Error>) -> Void) {
+        let db = Firestore.firestore()
+
+        db.collection("users").document(self.currentUserID).updateData(["profilePhoto": url.absoluteString]) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                print("Successfully updated profile photo")
+                completion(.success(()))
+            }
+        }
+    }
+    
+    
+    
+    func enablePush() {
+                
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            
+            if let error = error {
+                print("Failed to register with error: \(error.localizedDescription)")
+            } else {
+                print("Success! We authorized notifications")
+                //Get device token to update firestore
+                
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                    
+                    let userRef = database.collection("users").document(self.currentUserID)
+                    userRef.updateData(["isPushOn": true, "pushToken": self.user.pushToken]) { error in
+                        if let error = error {
+                            print("Error updating document: \(error)")
+                        } else {
+                            print("Push Notifications Enabled with token \(self.user.pushToken)")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    func disablePush() {
+        let userRef = database.collection("users").document(self.currentUserID)
+        self.user.pushToken = ""
+        userRef.updateData([ "isPushOn": false, "pushToken" : self.user.pushToken]) { err in
+            if let err = err {
+                print("Error updating document: \(err)")
+            } else {
+                print("Disabled push notifications")
+            }
+        }
+    }
+    
+    
     func signOut () {
         do {
             try Auth.auth().signOut()
@@ -224,6 +311,59 @@ class CurrentUserViewModel: ObservableObject {
             
         } catch {
             print("Error signing out user")
+        }
+    }
+    
+    func reauthenticateAndUpdatePassword(currentPassword: String, newPassword: String, completion: @escaping (Bool, String?) -> Void) {
+        guard let user = Auth.auth().currentUser, let email = user.email else {
+            completion(false, "User not logged in")
+            return
+        }
+        
+        // Reauthenticate the user
+        let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
+        user.reauthenticate(with: credential) { authResult, error in
+            if let error = error {
+                // Handle reauthentication failure
+                completion(false, error.localizedDescription)
+                return
+            }
+            
+            // User reauthenticated successfully, now update the password
+            user.updatePassword(to: newPassword) { error in
+                if let error = error {
+                    // Handle password update failure
+                    completion(false, error.localizedDescription)
+                } else {
+                    // Password updated successfully
+                    print("Password updated successfully")
+                    completion(true, nil)
+                }
+            }
+        }
+    }
+    
+    func deleteUserAccount(currentPassword: String, completion: @escaping (Bool, Error?) -> Void) {
+        guard let user = Auth.auth().currentUser, let email = user.email else {
+            completion(false, NSError(domain: "AuthError", code: 0, userInfo: [NSLocalizedDescriptionKey: "User not logged in"]))
+            return
+        }
+        
+        // Reauthenticate the user
+        let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
+        user.reauthenticate(with: credential) { _, error in
+            if let error = error {
+                completion(false, error)
+                return
+            }
+            user.delete { error in
+                if let error = error {
+                    completion(false, error)
+                } else {
+                    // Successfully deleted user account
+                    completion(true, nil)
+                }
+            }
         }
     }
 }

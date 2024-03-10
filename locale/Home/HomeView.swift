@@ -13,11 +13,13 @@ import CoreLocation
 struct HomeView: View {
     @EnvironmentObject var locationVM : LocationViewModel
     @EnvironmentObject var currentUser : CurrentUserViewModel
-    
+    @EnvironmentObject var viewModel : VideoUploadViewModel
+
     
     @State var showSideMenu = false
     @State var showCreateLocation = false
-    
+    @State var showConfirmVideo = false
+
     //Initialize to San Francisco
     @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194), latitudinalMeters: 1000, longitudinalMeters: 1000)
     
@@ -29,7 +31,7 @@ struct HomeView: View {
     }
     
     @State var shouldRecenterMap = true
-    
+
     
     var body: some View {
         ZStack {
@@ -79,7 +81,7 @@ struct HomeView: View {
                 
                 Spacer()
                 
-                VStack(spacing : 0) {
+                VStack(alignment :.trailing, spacing : 0) {
                     VStack {
                         Button(action: {
                             updateRegion(with: locationVM.userLocation)
@@ -92,9 +94,10 @@ struct HomeView: View {
                         Divider()
                         
                         Button(action: {
-                            showCreateLocation = true
+                            viewModel.isShowingImagePicker = true
+
                         }, label: {
-                            Image(systemName: "plus")
+                            Image(systemName: "video")
                                 .foregroundColor(.white)
                                 .padding()
                         })
@@ -104,6 +107,16 @@ struct HomeView: View {
                     }
                     .padding()
                     .frame(width : 80)
+                    .sheet(isPresented: $viewModel.isShowingImagePicker, onDismiss: {
+                        // This checks if a video was selected and triggers the confirmation view
+                        if viewModel.videoURL != nil {
+                            self.showConfirmVideo = true
+                        }
+                    }) {
+                        VideoCaptureView(videoURL: $viewModel.videoURL)
+                    }
+                    
+                    
 
                     Spacer()
                     
@@ -112,16 +125,21 @@ struct HomeView: View {
                             showCreateLocation = true
 
                         }) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.white)
-                                .padding()
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.white)
+                                Text("PANIC")
+                                    .font(.system(size: 18, weight : .bold))
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
                         }
                     }
                     .background{
-                        Color.blue.cornerRadius(20.0)
+                        Color.red.cornerRadius(20.0)
                     }
                     .padding()
-                    .frame(width : 80, height : 80)
+                    .frame(width : 160, height : 80)
                     
 
                 }
@@ -135,18 +153,31 @@ struct HomeView: View {
                             showCreateLocation = false
                         }
                     }
-
             )
             
             SideMenuView(showAccountMenu: $showSideMenu)
                 .leadingEdgeSheet(isPresented: showSideMenu)
             
+            SettingsView()
+                .trailingEdgeSheet(isPresented: currentUser.showSettings)
+
+            TOSView()
+                .bottomUpSheet(isPresented: currentUser.showTOS)
             
             VStack {
                 Spacer()
                 
                 CreateNewLocationView(showSheet: $showCreateLocation)
                     .bottomUpSheet(isPresented: showCreateLocation)
+                    .cornerRadius(15, corners: [.topLeft, .topRight])
+            }
+            .edgesIgnoringSafeArea(.bottom)
+            
+            VStack {
+                Spacer()
+                
+                ConfirmVideoUploadView(showSheet: $showConfirmVideo)
+                    .bottomUpSheet(isPresented: showConfirmVideo)
                     .cornerRadius(15, corners: [.topLeft, .topRight])
             }
             .edgesIgnoringSafeArea(.bottom)
