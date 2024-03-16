@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-import SwiftUI
 
 struct SideMenuView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
@@ -15,6 +14,7 @@ struct SideMenuView: View {
     
     
     @Binding var showAccountMenu : Bool
+    @Binding var showWithdrawal : Bool
     
     @State private var xOffset: CGFloat = -300 // Initial offset to start off-screen
 
@@ -90,6 +90,39 @@ struct SideMenuView: View {
                 
                 //Account Buttons
                 VStack {
+                    
+                    Button {
+                        showWithdrawal = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "dollarsign")
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(.white)
+                            
+                            Text("Balance :")
+                                .font(Font.custom("Avenir Next", size: 14))
+                                .foregroundColor(.white)
+                                .padding(.leading, 13)
+                            Spacer()
+                            
+                            HStack {
+                                Text("$\(String(format : "%.2f", currentUser.user.balance))")
+                                    .font(Font.custom("Avenir Next", size: 14))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal)
+                            }
+                            .frame( height : 30)
+                            .background(.blue)
+                            .cornerRadius(5)
+                            .outerShadow()
+
+                        }
+                    }
+                    .padding(.bottom, 32)
+
+
+
                     ForEach(menuItemOrder, id: \.self) { key in
 
                         Button(action: {
@@ -167,6 +200,6 @@ struct MenuLoginState : View {
     }
 }
 
-#Preview {
-    SideMenuView( showAccountMenu: .constant(true))
-}
+//#Preview {
+//    SideMenuView( showAccountMenu: .constant(true))
+//}

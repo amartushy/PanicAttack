@@ -12,6 +12,7 @@
 		2E1477172B82547100EAF88A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2E1477162B82547100EAF88A /* Preview Assets.xcassets */; };
 		2E14771E2B82556A00EAF88A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E14771D2B82556A00EAF88A /* SceneDelegate.swift */; };
 		2E1477202B82562100EAF88A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E14771F2B82562100EAF88A /* AppDelegate.swift */; };
+		2E5B04352BA6192900F73804 /* WithdrawView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5B04342BA6192900F73804 /* WithdrawView.swift */; };
 		2E60AEFF2B9D098700529F55 /* VideoCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E60AEFE2B9D098700529F55 /* VideoCaptureView.swift */; };
 		2E758D032B938BB800869390 /* LocationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E758D022B938BB800869390 /* LocationViewModel.swift */; };
 		2E758D052B93E87400869390 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E758D042B93E87400869390 /* Views.swift */; };
@@ -76,6 +77,7 @@
 		2E14771D2B82556A00EAF88A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		2E14771F2B82562100EAF88A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		2E1477212B82566A00EAF88A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2E5B04342BA6192900F73804 /* WithdrawView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WithdrawView.swift; sourceTree = "<group>"; };
 		2E60AEFE2B9D098700529F55 /* VideoCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCaptureView.swift; sourceTree = "<group>"; };
 		2E758D022B938BB800869390 /* LocationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationViewModel.swift; sourceTree = "<group>"; };
 		2E758D042B93E87400869390 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
@@ -196,6 +198,7 @@
 			children = (
 				2EFDE7FF2B82644D00C624B1 /* SideMenuView.swift */,
 				2EDEDAF72B9D27DF00A81297 /* ImagePicker.swift */,
+				2E5B04342BA6192900F73804 /* WithdrawView.swift */,
 				2E758D062B93ED1200869390 /* TOSView.swift */,
 				2E758D0A2B93EDF900869390 /* SettingsView.swift */,
 				2E758D0E2B93F19D00869390 /* ChangePasswordView.swift */,
@@ -367,6 +370,7 @@
 				2EDEDAF62B9D10E500A81297 /* VideoUploadViewModel.swift in Sources */,
 				2EB667052B8AC30F001335F8 /* Functions.swift in Sources */,
 				2EFDE8152B828D9100C624B1 /* CreateAccountView.swift in Sources */,
+				2E5B04352BA6192900F73804 /* WithdrawView.swift in Sources */,
 				2E14771E2B82556A00EAF88A /* SceneDelegate.swift in Sources */,
 				2EFDE8172B828DE300C624B1 /* ErrorMessageModal.swift in Sources */,
 				2EFDE8112B828C5900C624B1 /* LoginView.swift in Sources */,
@@ -518,8 +522,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We use this to capture audio from your camera";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -558,8 +561,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We use this to capture audio from your camera";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (

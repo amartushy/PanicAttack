@@ -17,6 +17,7 @@ import FirebaseStorage
 
 struct User: Identifiable, Hashable, Codable {
     var id: String
+    var balance : Double
     var dateCreated : Date
     var email : String
     var isPushOn : Bool
@@ -52,6 +53,7 @@ class CurrentUserViewModel: ObservableObject {
     @Published var longitude : Double = 0.0
 
     @Published var user : User = User(id: "",
+                                      balance : 0.0,
                                       dateCreated : Date(),
                                       email: "",
                                       isPushOn: false,
@@ -144,6 +146,7 @@ class CurrentUserViewModel: ObservableObject {
                 dateCreated = dateCreatedTimestamp.dateValue()
             }
             
+            self.user.balance = document.get("balance") as? Double ?? 0.0
             self.user.dateCreated = dateCreated
             self.user.email = document.get("email") as? String ?? ""
             self.user.isPushOn = document.get("isPushOn") as? Bool ?? false
@@ -171,6 +174,7 @@ class CurrentUserViewModel: ObservableObject {
                                 
                 // Create a new user
                 let newUser = User(id: authResult.user.uid,
+                                   balance : 0.0,
                                    dateCreated: Date(),
                                    email: email,
                                    isPushOn: false,
@@ -365,5 +369,53 @@ class CurrentUserViewModel: ObservableObject {
                 }
             }
         }
-    }
+    }    
+    
+
+    func submitWithdrawal(withdrawalData: [String: Any], completion: @escaping (Bool, String) -> Void) {
+            guard let withdrawalAmountDouble = withdrawalData["amount"] as? Double else {
+                print("Amount not found or invalid in withdrawalData")
+                completion(false, "Amount not found or invalid.")
+                return
+            }
+            
+            let db = Firestore.firestore()
+            let withdrawalRef = db.collection("withdrawals").document()
+            let userRef = db.collection("users").document(currentUserID)
+            
+            db.runTransaction({ (transaction, errorPointer) -> Any? in
+                let userDocument: DocumentSnapshot
+                do {
+                    try userDocument = transaction.getDocument(userRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                
+                let oldBalance = userDocument.data()?["balance"] as? Double  ?? 0.0
+                
+                if oldBalance < withdrawalAmountDouble {
+                    let error = NSError(domain: "App", code: 0, userInfo: [NSLocalizedDescriptionKey: "Insufficient funds"])
+                    errorPointer?.pointee = error
+                    return nil
+                }
+                
+                let newBalance = oldBalance - withdrawalAmountDouble
+                
+                transaction.updateData(["balance": newBalance], forDocument: userRef)
+                transaction.setData(withdrawalData, forDocument: withdrawalRef)
+                
+                return nil
+            }) { (object, error) in
+                if let error = error {
+                    print("Transaction failed: \(error)")
+                    completion(false, "Transaction failed: \(error.localizedDescription)")
+                } else {
+                    print("Transaction successfully committed!")
+                    completion(true, "Transaction successfully committed!")
+                }
+            }
+        }
+
+
 }

@@ -19,7 +19,9 @@ struct HomeView: View {
     @State var showSideMenu = false
     @State var showCreateLocation = false
     @State var showConfirmVideo = false
-
+    @State var showWithdrawal = false
+    
+    
     //Initialize to San Francisco
     @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194), latitudinalMeters: 1000, longitudinalMeters: 1000)
     
@@ -155,7 +157,7 @@ struct HomeView: View {
                     }
             )
             
-            SideMenuView(showAccountMenu: $showSideMenu)
+            SideMenuView(showAccountMenu: $showSideMenu, showWithdrawal: $showWithdrawal)
                 .leadingEdgeSheet(isPresented: showSideMenu)
             
             SettingsView()
@@ -163,6 +165,9 @@ struct HomeView: View {
 
             TOSView()
                 .bottomUpSheet(isPresented: currentUser.showTOS)
+            
+            WithdrawView(showWithdrawal : $showWithdrawal)
+                .trailingEdgeSheet(isPresented: showWithdrawal)
             
             VStack {
                 Spacer()
