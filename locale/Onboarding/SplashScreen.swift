@@ -15,20 +15,23 @@ struct SplashScreen: View {
             VStack {
                 Spacer()
                 
-                Image(systemName: "mappin.circle.fill")
-                    .font(.system(size: 100))
+                Image("panic_attack_clear")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height : 200)
                     .outerShadow()
                 
-                
-                VStack {
-
-                    Text("App Name")
-                        .font(.system(size: 32, weight : .bold))
-                }
-                .padding(.top)
-
+                ProgressView()
+                    .padding(.top)
                 
                 Spacer()
+
+                Text("Panic Attack LLC \nv1.0.0")
+                    .font(.system(size: 12, weight : .bold))
+                    .foregroundColor(Color("text-bold"))
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 20)
+                            
             }
             
             Spacer()

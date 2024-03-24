@@ -11,10 +11,12 @@ import SwiftUI
 struct SideMenuView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
     @EnvironmentObject var currentUser : CurrentUserViewModel
-    
+    @EnvironmentObject var onboardingVM : StripeOnboardingViewModel
+
     
     @Binding var showAccountMenu : Bool
     @Binding var showWithdrawal : Bool
+    @Binding var showStripeOnboarding : Bool
     
     @State private var xOffset: CGFloat = -300 // Initial offset to start off-screen
 
@@ -92,7 +94,12 @@ struct SideMenuView: View {
                 VStack {
                     
                     Button {
-                        showWithdrawal = true
+                        if currentUser.stripeOnboardingCompleted == nil || currentUser.stripeOnboardingCompleted == false {
+                            showStripeOnboarding = true
+
+                        } else {
+                            showWithdrawal = true
+                        }
                     } label: {
                         HStack {
                             Image(systemName: "dollarsign")
@@ -120,6 +127,7 @@ struct SideMenuView: View {
                         }
                     }
                     .padding(.bottom, 32)
+                    
 
 
 
@@ -160,7 +168,7 @@ struct SideMenuView: View {
                             Alert(
                                 title: Text("Are you sure you'd like to log out?"),
                                 primaryButton: .destructive(Text("Log Out")) {
-//                                            currentUser.signOut()
+                                    currentUser.signOut()
                                 },
                                 secondaryButton: .cancel()
                             )
@@ -184,6 +192,35 @@ struct SideMenuView: View {
             .padding()
             .background(Color("background"))
             .edgesIgnoringSafeArea(.vertical)
+            .onAppear {
+                
+                if !currentUser.stripeOnboardingCompleted {
+                    onboardingVM.checkOnboardingStatus(userId: currentUser.currentUserID) { onboardingCompleted, error in
+                        if let error = error {
+                            // Handle error (e.g., show an error message)
+                            print("Error checking onboarding status: \(error.localizedDescription)")
+                            return
+                        }
+                        
+                        if let onboardingCompleted = onboardingCompleted {
+                            if onboardingCompleted {
+                                // Navigate to WithdrawView
+                                currentUser.stripeOnboardingCompleted = onboardingCompleted
+                                
+                                onboardingVM.fetchWithdrawalMethods(stripeAccountID: currentUser.stripeAccountID)
+
+                            } else {
+                                // Navigate to ConnectStripeView or open Stripe URL
+                                currentUser.stripeOnboardingCompleted = false
+                            }
+                        } else {
+                            // Handle unexpected result (e.g., show an error message)
+                            print("Unexpected result from onboarding status check")
+                        }
+                    }
+                }
+            }
+            
             
             Spacer()
         }

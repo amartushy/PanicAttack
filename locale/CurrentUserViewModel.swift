@@ -69,7 +69,8 @@ class CurrentUserViewModel: ObservableObject {
     @Published var showTOS : Bool = false
     @Published var showPrivacyPolicy : Bool = false
     @Published var showAboutUs : Bool = false
-    
+    @Published var stripeOnboardingCompleted : Bool = false
+
     //Refresh ID to force view updates (Photo selection..)
     @Published var refreshID = UUID()
 
@@ -82,6 +83,8 @@ class CurrentUserViewModel: ObservableObject {
             didChange.send(self)
         }
     }
+    
+    @Published var stripeAccountID : String = ""
     
     var handle: AuthStateDidChangeListenerHandle?
     
@@ -155,10 +158,11 @@ class CurrentUserViewModel: ObservableObject {
             self.user.pushToken = document.get("pushToken") as? String ?? ""
             self.user.lat = document.get("lat") as? Double ?? 0.0
             self.user.lng = document.get("lng") as? Double ?? 0.0
-
+            
             //Initialize core properties
             self.user.id = document.documentID
-
+            self.stripeOnboardingCompleted = document.get("stripeOnboardingCompleted") as? Bool ?? false
+            self.stripeAccountID = document.get("stripeAccountID") as? String ?? ""
         }
     }
     
@@ -312,10 +316,39 @@ class CurrentUserViewModel: ObservableObject {
         do {
             try Auth.auth().signOut()
             print("Successfully signed out user")
+            resetCurrentUserVM()
             
         } catch {
             print("Error signing out user")
         }
+    }
+    
+    func resetCurrentUserVM() {
+        self.isAppLoading = true
+        self.latitude = 0.0
+        self.longitude  = 0.0
+
+        self.user = User(id: "",
+                          balance : 0.0,
+                          dateCreated : Date(),
+                          email: "",
+                          isPushOn: false,
+                          name : "",
+                          profilePhoto: "",
+                          pushToken : "",
+                          lat : 0.0,
+                          lng : 0.0 )
+        
+        
+        //Navigation
+        self.showSettings = false
+        self.showTOS = false
+        self.showPrivacyPolicy = false
+        self.showAboutUs = false
+        self.stripeOnboardingCompleted = false
+
+        //Refresh ID to force view updates (Photo selection..)
+        self.refreshID = UUID()
     }
     
     func reauthenticateAndUpdatePassword(currentPassword: String, newPassword: String, completion: @escaping (Bool, String?) -> Void) {
@@ -373,7 +406,7 @@ class CurrentUserViewModel: ObservableObject {
     
 
     func submitWithdrawal(withdrawalData: [String: Any], completion: @escaping (Bool, String) -> Void) {
-            guard let withdrawalAmountDouble = withdrawalData["amount"] as? Double else {
+            guard let withdrawalAmountDouble = withdrawalData["total"] as? Double else {
                 print("Amount not found or invalid in withdrawalData")
                 completion(false, "Amount not found or invalid.")
                 return

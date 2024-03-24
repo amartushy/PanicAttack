@@ -7,6 +7,7 @@
 
 import Foundation
 import Firebase
+import FirebaseAuth
 import CoreLocation
 import MapKit
 
@@ -112,8 +113,14 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
         let locationAlertsCollection = db.collection("locationAlerts")
         
         // Assume you have a way to obtain the current user's ID
-        let userID = "anonymous" // This should be replaced with the actual user ID retrieval logic
+        var userID = "anonymous"
 
+        if let authID = Auth.auth().currentUser?.uid {
+            userID = authID
+        } else {
+            print("No user is currently signed in.")
+        }
+        
         // Create a dictionary representing the data to save
         let alertData: [String: Any] = [
             "latitude": userLocation.coordinate.latitude,

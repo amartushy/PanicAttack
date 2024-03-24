@@ -39,12 +39,15 @@ struct InitialView: View {
                     
                     VStack {
                         
+                        Spacer()
+
                         HStack {
                             Spacer()
-                            Text("Locale.")
-                                .font(.system(size: 32, weight : .bold))
-                                .foregroundColor(.white)
-                                .padding(.top)
+                            Image("panic_attack_clear")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height : 100)
+
                             Spacer()
                         }
                         

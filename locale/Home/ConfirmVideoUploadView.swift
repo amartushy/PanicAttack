@@ -161,7 +161,7 @@ struct VideoPlayerView: UIViewRepresentable {
                 layer.frame = uiView.bounds
             }
             // Optionally, start or control playback here
-            self.player.play()
+//            self.player.play()
         }
     }
 
