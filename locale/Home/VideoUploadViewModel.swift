@@ -15,6 +15,7 @@ import AVFoundation // Import AVFoundation to work with video assets
 import CoreLocation
 
 
+
 class VideoUploadViewModel: ObservableObject {
     @Published var isShowingImagePicker = false
     @Published var isShowingConfirmation = false
@@ -22,9 +23,47 @@ class VideoUploadViewModel: ObservableObject {
     @Published var locationString = ""
     
     
-    // This method now takes CLLocation as a parameter and is marked as async
-    func uploadVideoToFirebase(with location: CLLocation) async {
-        guard let videoURL = self.videoURL else { return }
+//    // This method now takes CLLocation as a parameter and is marked as async
+//    func uploadVideoToFirebase(with location: CLLocation) async {
+//        guard let videoURL = self.videoURL else { return }
+//        
+//        // First, update the location string
+//        await updateLocationString(with: location)
+//        
+//        // Calculate video duration
+//        let asset = AVURLAsset(url: videoURL)
+//        let durationInSeconds = CMTimeGetSeconds(asset.duration)
+//
+//        let storageRef = Storage.storage().reference().child("videos/\(UUID().uuidString).mov")
+//        
+//        // Upload video file to Firebase Storage
+//        storageRef.putFile(from: videoURL, metadata: nil) { [weak self] metadata, error in
+//            guard let _ = metadata else {
+//                print(error?.localizedDescription ?? "Unknown error")
+//                return
+//            }
+//            
+//            // Fetch the download URL
+//            storageRef.downloadURL { (url, error) in
+//                guard let downloadURL = url else {
+//                    print(error?.localizedDescription ?? "Unknown error")
+//                    return
+//                }
+//                
+//                // Proceed to update Firestore with additional details
+//                DispatchQueue.main.async {
+//                    self?.updateFootageCollection(videoURL: downloadURL, durationInSeconds: durationInSeconds)
+//                }
+//            }
+//        }
+//    }
+    
+    // Adjust the function signature to include a completion handler
+    func uploadVideoToFirebase(with location: CLLocation, completion: @escaping (Result<URL, Error>) -> Void) async {
+        guard let videoURL = self.videoURL else {
+            completion(.failure(NSError(domain: "UploadError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Video URL is nil."])))
+            return
+        }
         
         // First, update the location string
         await updateLocationString(with: location)
@@ -37,25 +76,45 @@ class VideoUploadViewModel: ObservableObject {
         
         // Upload video file to Firebase Storage
         storageRef.putFile(from: videoURL, metadata: nil) { [weak self] metadata, error in
-            guard let _ = metadata else {
-                print(error?.localizedDescription ?? "Unknown error")
+            guard let self = self else { return }
+            
+            if let error = error {
+                // Directly call completion with failure if there's an error during upload
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
                 return
             }
             
             // Fetch the download URL
-            storageRef.downloadURL { (url, error) in
+            storageRef.downloadURL { url, error in
                 guard let downloadURL = url else {
-                    print(error?.localizedDescription ?? "Unknown error")
+                    // If fetching the download URL fails, call completion with failure
+                    if let error = error {
+                        DispatchQueue.main.async {
+                            completion(.failure(error))
+                        }
+                    } else {
+                        DispatchQueue.main.async {
+                            completion(.failure(NSError(domain: "UploadError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not fetch download URL."])))
+                        }
+                    }
                     return
                 }
                 
                 // Proceed to update Firestore with additional details
                 DispatchQueue.main.async {
-                    self?.updateFootageCollection(videoURL: downloadURL, durationInSeconds: durationInSeconds)
+                    self.updateFootageCollection(videoURL: downloadURL, durationInSeconds: durationInSeconds)
+                    // Once everything is done, call completion with success
+                    completion(.success(downloadURL))
                 }
             }
         }
     }
+
+    
+    
+
     
     private func updateLocationString(with location: CLLocation) async {
         let geocoder = CLGeocoder()
@@ -93,7 +152,9 @@ class VideoUploadViewModel: ObservableObject {
                 print("Error adding document: \(error.localizedDescription)")
             } else {
                 print("Document added with ID: \(locationAlertId)")
+
             }
         }
     }
+    
 }

@@ -37,6 +37,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
         
+        UNUserNotificationCenter.current().setBadgeCount(0, withCompletionHandler: nil)
+
         
         return true
     }

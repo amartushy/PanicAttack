@@ -13,9 +13,17 @@ import CoreLocation
 struct ConfirmVideoUploadView: View {
     @EnvironmentObject var videoVM : VideoUploadViewModel
     @EnvironmentObject var locationVM : LocationViewModel
+    @EnvironmentObject var currentUser : CurrentUserViewModel
 
     @Binding var showSheet: Bool
-
+    var showUploadAvailable : Bool
+    
+    @State var showProgress : Bool = false
+    @State var showError : Bool = false
+    @State var showSuccess : Bool = false
+    @State var errorTitle : String = "Something went wrong"
+    @State var errorMessage : String = "There was an issue processing your payment. Please try again later"
+    
     
     var body: some View {
         VStack {
@@ -52,62 +60,113 @@ struct ConfirmVideoUploadView: View {
             .padding([.top, .bottom])
             
             VStack(spacing : 20) {
-                Text("Upload your footage. You will earn $11.50 for this uploading this video")
-                    .font(Font.system(size: 14))
-                    .foregroundColor(Color.white)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                if showUploadAvailable {
+                    Text("Upload your footage. You will earn $10.00 for this uploading this video")
+                        .font(Font.system(size: 14))
+                        .foregroundColor(Color.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    
+                    // Include video preview if the URL exists
+                    HStack {
+                        Spacer()
+                        if let videoURL = videoVM.videoURL {
+                            let player = AVPlayer(url: videoURL)
 
-                // Include video preview if the URL exists
-                HStack {
-                    Spacer()
-                    if let videoURL = videoVM.videoURL {
-                        let player = AVPlayer(url: videoURL)
-
-                        VideoPlayerView(url: videoURL, player : player)
-                            .frame(height: 200) // Set a fixed height for the video player
+                            VideoPlayerView(url: videoURL, player : player)
+                                .frame(height: 200) // Set a fixed height for the video player
+                        }
+                        Spacer()
                     }
+                    .cornerRadius(12)
+                    .frame(height: 200)
+                    .background(.black)
+                    
+                } else {
+                    Spacer()
+                    Image("panic_attack_clear")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height : 120)
+                    
+                    Text("Upload Unavailable")
+                        .font(.system(size: 18, weight : .bold))
+
+                    Text("5 people have responded to this incident already. No more submissions can be uploaded.")
+                        .font(Font.system(size: 14))
+                        .foregroundColor(Color.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                     Spacer()
                 }
-                .cornerRadius(12)
-                .frame(height: 200)
-                .background(.black)
+
 
             }
             .padding(.horizontal, 30)
             
             Spacer()
             
-            Button {
-                let defaultLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
-
-                Task {
-                    await videoVM.uploadVideoToFirebase(with: locationVM.userLocation ?? defaultLocation)
-                }
-                showSheet.toggle()
-
-            } label: {
-                
-                HStack {
-                    Spacer()
-
-                    Image(systemName: "icloud.and.arrow.up.fill")
-                        .foregroundColor(.white)
-                    Text("Upload")
-                        .font(.system(size: 18, weight : .bold))
-                        .foregroundColor(.white)
-                    Spacer()
-
-                }
-                .padding()
-                .frame(height : 50)
-                .background {Color.blue}
-                .cornerRadius(10)
-                .outerShadow()
-
+            if showProgress {
+                ProgressView("Uploading..")
             }
-            .padding(.bottom, 50)
-            .padding(.horizontal, 30)
+            
+            if showUploadAvailable {
+                Button {
+                    showProgress = true
+                    let defaultLocation = CLLocation(latitude: 37.7749, longitude: -122.4194)
+
+                    Task {
+                        await videoVM.uploadVideoToFirebase(with: locationVM.userLocation ?? defaultLocation) { result in
+                            switch result {
+                            case .success(let downloadURL):
+                                // Handle success, such as updating the UI or showing a success message
+                                print("Video uploaded successfully: \(downloadURL)")
+                                DispatchQueue.main.async {
+                                    // Update UI on the main thread
+                                    currentUser.updateUserBalance(by: 10.0, for: currentUser.currentUserID) { success, error in
+                                        showProgress = false
+                                        currentUser.showSuccessfulUpload = true
+                                        showSheet = false
+                                    }
+                                }
+                            case .failure(let error):
+                                // Handle failure, such as showing an error alert
+                                print("Failed to upload video: \(error)")
+                                DispatchQueue.main.async {
+                                    // Update UI on the main thread
+                                    showProgress = false
+                                    showError = true
+                                    
+                                }
+                            }
+                        }
+                    }
+
+                } label: {
+                    
+                    HStack {
+                        Spacer()
+
+                        Image(systemName: "icloud.and.arrow.up.fill")
+                            .foregroundColor(.white)
+                        Text("Upload")
+                            .font(.system(size: 18, weight : .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+
+                    }
+                    .padding()
+                    .frame(height : 50)
+                    .background {Color.blue}
+                    .cornerRadius(10)
+                    .outerShadow()
+
+                }
+                .padding(.bottom, 50)
+                .padding(.horizontal, 30)
+            }
+
 
         }
         .background(Color("background"))

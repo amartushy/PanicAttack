@@ -12,32 +12,31 @@ struct SideMenuView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
     @EnvironmentObject var currentUser : CurrentUserViewModel
     @EnvironmentObject var onboardingVM : StripeOnboardingViewModel
+    @EnvironmentObject var storeManager : StoreManager
 
-    
     @Binding var showAccountMenu : Bool
     @Binding var showWithdrawal : Bool
     @Binding var showStripeOnboarding : Bool
+
+    @State var showUpgradeView = false
+    
     
     @State private var xOffset: CGFloat = -300 // Initial offset to start off-screen
 
     let menuItems : [String : String] = [
-        "Profile" : "account-profile",
         "Settings" : "account-settings",
         "Privacy Policy" : "account-privacy",
         "Terms of Service" : "account-terms",
-        "About Us" : "account-about",
         "Support" : "account-support",
         "Logout" : "account-logout"
     ]
     
     let menuItemOrder: [String] = [
-        "Profile", "Settings", "Privacy Policy", "Terms of Service",
-        "About Us", "Support", "Logout"
+        "Settings", "Privacy Policy", "Terms of Service", "Support", "Logout"
     ]
     
     @State var showProfile = false
     @State var showLogout = false
-    
     
     @State var showImagePicker: Bool = false
     @State var selectedImage: UIImage?
@@ -49,8 +48,6 @@ struct SideMenuView: View {
                  currentUser.updateUserProfilePhotoURL(url) { result in
                      switch result {
                      case .success():
-                         print("New Profile Image : \(currentUser.user.profilePhoto)")
-                         print("User profile updated successfully")
                          currentUser.refreshID = UUID()
                      case .failure(let error):
                          print("Error updating user profile: \(error.localizedDescription)")
@@ -85,13 +82,41 @@ struct SideMenuView: View {
                 }
                 .id(currentUser.refreshID)
 
-
-
                 
-                Spacer().frame(height : 20)
                 
                 //Account Buttons
                 VStack {
+                    if !currentUser.isUserSubscribed {
+                        Button  {
+                            showUpgradeView = true
+                        } label: {
+                            HStack {
+                                
+                                Spacer()
+                                Image(systemName: "crown.fill")
+                                    .font(Font.custom("Avenir Next", size: 14))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                
+                                Text("Upgrade to Premium")
+                                    .font(Font.custom("Avenir Next", size: 14))
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                            }
+                            .frame( height : 50)
+                            .background(.blue)
+                            .cornerRadius(5)
+                            .outerShadow()
+
+                        }
+                        .sheet(isPresented: $showUpgradeView, content: {
+                            UpgradePremiumView()
+                        })
+                    }
+
+
                     
                     Button {
                         if currentUser.stripeOnboardingCompleted == nil || currentUser.stripeOnboardingCompleted == false {
@@ -117,16 +142,21 @@ struct SideMenuView: View {
                                     .font(Font.custom("Avenir Next", size: 14))
                                     .fontWeight(.semibold)
                                     .foregroundColor(.white)
-                                    .padding(.horizontal)
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(Font.custom("Avenir Next", size: 12))
+                                    .foregroundColor(.white)
+
                             }
+                            .padding(.horizontal)
                             .frame( height : 30)
-                            .background(.blue)
+                            .background(Color("background"))
                             .cornerRadius(5)
                             .outerShadow()
 
                         }
                     }
-                    .padding(.bottom, 32)
+                    .padding(.vertical, 20)
                     
 
 
@@ -237,6 +267,9 @@ struct MenuLoginState : View {
     }
 }
 
-//#Preview {
-//    SideMenuView( showAccountMenu: .constant(true))
-//}
+#Preview {
+    SideMenuView( showAccountMenu: .constant(true), showWithdrawal : .constant(false), showStripeOnboarding: .constant(false))
+        .environmentObject(CurrentUserViewModel())
+        .environmentObject(StripeOnboardingViewModel())
+        .environmentObject(StoreManager())
+}

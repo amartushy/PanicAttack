@@ -22,6 +22,7 @@ struct CreateNewLocationView: View {
     @Binding var showSheet: Bool
     
     @EnvironmentObject var locationVM : LocationViewModel
+    @EnvironmentObject var currentUser : CurrentUserViewModel
 
     @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 0, longitude: 0), latitudinalMeters: 1000, longitudinalMeters: 1000)
         
@@ -204,4 +205,6 @@ struct ContentView_Previews: PreviewProvider {
 
 #Preview {
     CreateNewLocationView(showSheet : .constant(true))
+        .environmentObject(LocationViewModel())
+        .environmentObject(CurrentUserViewModel())
 }

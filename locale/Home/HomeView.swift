@@ -24,6 +24,8 @@ struct HomeView: View {
 
     @State var showWithdrawal = false
     @State var showStripeOnboarding = false
+    @State var showUpgrade = false
+    
     
     
     //Initialize to San Francisco
@@ -72,46 +74,80 @@ struct HomeView: View {
                     )
                 }
                 
-                VStack(alignment : .center) {
-                    Spacer()
-                    Text("When you are in trouble, tap the panic button")
-                        .font(.system(size: 18, weight : .bold))
-                        .foregroundColor(Color("text-bold"))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                    
-                    Button(action: {
-                        showCreateLocation = true
-                    }) {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.white)
-                            Text("PANIC")
-                                .font(.system(size: 18, weight : .bold))
-                                .foregroundColor(.white)
-                            Spacer()
+                ZStack {
+                    VStack(alignment : .center) {
+                        Spacer()
+                        Text("When you are in trouble, tap the panic button")
+                            .font(.system(size: 18, weight : .bold))
+                            .foregroundColor(Color("text-bold"))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                        
+                        Button(action: {
+
+                            if currentUser.isUserSubscribed {
+                                showCreateLocation = true
+                            } else {
+                                showUpgrade = true
+                            }
+                        }) {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.white)
+                                Text("PANIC")
+                                    .font(.system(size: 18, weight : .bold))
+                                    .foregroundColor(.white)
+                                Spacer()
+                            }
+                            .padding()
+                        }
+                        .background{
+                            Color(.red).cornerRadius(20.0)
+                                .outerShadow()
+
                         }
                         .padding()
+                        .frame( height : 80)
+                        .cornerRadius(20.0)
+                        .sheet(isPresented: $showUpgrade) {
+                            UpgradePremiumView(showExpiredText: true)
+                        }
+
+
+                        
+                        Text("Members within 10 miles will be alerted")
+                            .font(.system(size: 14, weight : .semibold))
+                            .foregroundColor(Color("text-bold"))
+                            .padding(.horizontal, 30)
+                            .padding(.bottom, 40)
+
                     }
-                    .background{
-                        Color.red.cornerRadius(20.0)
+                    .frame(height : 220)
+                    .background {
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color("background-textfield")
+                                .shadow(.inner(color: .white.opacity(0.8), radius: 1, x: 0, y: -1))
+                                .shadow(.inner(color: .black.opacity(0.3), radius: 2, x: 2, y: 2))
+                            )
                     }
-                    .padding()
-                    .frame( height : 80)
+                    .offset(y : -8)
                     
-                    Text("Members within 10 miles will be alerted")
-                        .font(.system(size: 14, weight : .semibold))
-                        .foregroundColor(Color("text-bold"))
-                        .padding(.horizontal, 30)
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                        }
+                        .frame(height : 20)
+                        .background(Color("background-textfield"))
+                    }
+                    .frame(height : 220)
 
                 }
-                .background(Color("background"))
-                .background(.regularMaterial)
-                .frame(height : 200)
+
                 
             }
-
+            .background(Color("background"))
             .overlay(
                 Color.black.opacity(showSideMenu || showCreateLocation ? 0.5 : 0)
                     .edgesIgnoringSafeArea(.all)
@@ -125,6 +161,13 @@ struct HomeView: View {
             
             SideMenuView(showAccountMenu: $showSideMenu, showWithdrawal: $showWithdrawal, showStripeOnboarding: $showStripeOnboarding)
                 .leadingEdgeSheet(isPresented: showSideMenu)
+            
+            VStack {
+                Spacer()
+                BookingSuccessModal(showModal: $currentUser.showSuccessfulPayment, title: "Success!", message: "Your payment was successful")
+                    .centerGrowingModal(isPresented: currentUser.showSuccessfulPayment)
+                Spacer()
+            }
             
             SettingsView()
                 .trailingEdgeSheet(isPresented: currentUser.showSettings)
@@ -141,6 +184,13 @@ struct HomeView: View {
             
             VStack {
                 Spacer()
+                ErrorMessageModal(showErrorMessageModal: $currentUser.showSuccessfulUpload, title: "Successfully Uploaded!", message: "Your upload was successful and your balance has been updated. Thanks!")
+                    .centerGrowingModal(isPresented: currentUser.showSuccessfulUpload)
+                Spacer()
+            }
+            
+            VStack {
+                Spacer()
                 
                 CreateNewLocationView(showSheet: $showCreateLocation)
                     .bottomUpSheet(isPresented: showCreateLocation)
@@ -151,13 +201,15 @@ struct HomeView: View {
             VStack {
                 Spacer()
                 
-                ConfirmVideoUploadView(showSheet: $showConfirmVideo)
+                ConfirmVideoUploadView(showSheet: $showConfirmVideo, showUploadAvailable: true)
                     .bottomUpSheet(isPresented: showConfirmVideo)
                     .cornerRadius(15, corners: [.topLeft, .topRight])
             }
             .edgesIgnoringSafeArea(.bottom)
 
         }
+        .edgesIgnoringSafeArea(.bottom)
+
     }
 }
 

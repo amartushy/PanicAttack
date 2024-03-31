@@ -28,6 +28,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             .environmentObject(LocationViewModel())
             .environmentObject(VideoUploadViewModel())
             .environmentObject(StripeOnboardingViewModel())
+            .environmentObject(CheckoutViewModel())
+            
         
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {

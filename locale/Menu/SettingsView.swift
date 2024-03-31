@@ -12,78 +12,319 @@ import FirebaseAuth
 
 struct SettingsView: View {
     @EnvironmentObject var currentUser : CurrentUserViewModel
+    @EnvironmentObject var checkoutVM : CheckoutViewModel
+
+    @State var showCancelMembership = false
+    @State var showProcessing = false
+    @State var showError : Bool = false
+    @State var showSuccess : Bool = false
+    @State var errorTitle : String = "Something went wrong"
+    @State var errorMessage : String = "There was an issue processing your payment. Please try again later"
     
-    @State var isPushOn = false
     
     var body: some View {
         
-        VStack {
-            
-            HStack {
-                Button(action: {
-                    currentUser.showSettings = false
-                }, label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-
-                        .foregroundColor(Color("text-bold"))
-
-                })
+        ZStack {
+            VStack {
                 
-                Text("Account Settings")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color("text-bold"))
-                
-                Spacer()
-            }
-            .padding()
-            .padding(.bottom)
+                HStack {
+                    Button(action: {
+                        currentUser.showSettings = false
+                    }, label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
 
+                            .foregroundColor(Color("text-bold"))
 
-            HStack {
-                Text("Notifications")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(Color("text-bold"))
-                .padding(.leading, 5)
-                
-                Spacer()
-            }
-            .padding(.leading)
-            
-            VStack(spacing : 0) {
-                
-                VStack {
-
-                    AccountItemView(baseColor: .blue, icon: "iphone", title: "Push Notifications", isOn: $currentUser.user.isPushOn)
-                        .onChange(of: currentUser.user.isPushOn) { oldValue, newValue in
-                            if newValue {
-                                currentUser.enablePush()
-                            } else {
-                                currentUser.disablePush()
-                            }
-                        }
-
+                    })
                     
+                    Text("Account Settings")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(Color("text-bold"))
+                    
+                    Spacer()
+                }
+                .padding()
+                .padding(.bottom)
+
+
+                HStack {
+                    Text("Notifications")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(Color("text-bold"))
+                    .padding(.leading, 5)
+                    
+                    Spacer()
+                }
+                .padding(.leading)
+                
+                VStack(spacing : 0) {
+                    
+                    VStack {
+
+                        AccountItemView(baseColor: .blue, icon: "iphone", title: "Push Notifications", isOn: $currentUser.user.isPushOn)
+                            .onChange(of: currentUser.user.isPushOn) { oldValue, newValue in
+                                if newValue {
+                                    currentUser.enablePush()
+                                } else {
+                                    currentUser.disablePush()
+                                }
+                            }
+                        
+
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
 
                 }
+                .background(Color("background-element"))
+                .cornerRadius(25)
+                .shadow(color : Color("shadow-white"), radius : 1, x : -1, y : -1)
+                .shadow(color : Color("shadow-black"), radius : 3, x : 2, y : 2)
                 .padding(.horizontal)
-                .padding(.top)
+                
+                
+                
+                AccountSettingsSection()
+                    .padding(.bottom)
+
+                HStack {
+                    Text("Membership")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(Color("text-bold"))
+                    .padding(.leading, 5)
+                    
+                    Spacer()
+                }
+                .padding(.leading)
+                
+                VStack(spacing : 0) {
+                    
+                    VStack {
+
+                        if currentUser.isUserSubscribed {
+                            Button  {
+                                showCancelMembership = true
+                            } label: {
+                                HStack {
+                                    ZStack {
+                                        
+                                        Circle()
+                                            .frame(width : 35, height : 35)
+                                            .foregroundStyle(
+                                                .blue.gradient.shadow(.inner(color: .white.opacity(0.3), radius: 10, x: 3, y: 3))
+                                            )
+                                        Image(systemName: "crown")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .font(.system(size: 15, weight: .bold))
+
+                                    }
+                                    
+                                    VStack(alignment : .leading) {
+                                        Text("Premium Membership")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(Color("text-bold"))
+                                            .padding(.leading, 5)
+                                        
+                                        Text("$9.99 / mo")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(Color("text-bold"))
+                                            .padding(.leading, 5)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Text("Active")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(Color(.white))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 5)
+                                        .background(Color("toggleOn"))
+                                        .cornerRadius(10)
+
+                                    
+                                }
+                                .padding(.bottom)
+                            }
+                        } else {
+                            Button  {
+                                
+                                let manager = CheckoutControllerManager(checkout: checkoutVM, currentUser: currentUser, navigateToError: $showError, navigateToSuccess : $currentUser.showSuccessfulPayment)
+                                manager.checkoutController.showApplePaySheet()
+                                
+                            } label: {
+                                HStack {
+                                    ZStack {
+                                        
+                                        Circle()
+                                            .frame(width : 35, height : 35)
+                                            .foregroundStyle(
+                                                .blue.gradient.shadow(.inner(color: .white.opacity(0.3), radius: 10, x: 3, y: 3))
+                                            )
+                                        Image(systemName: "crown")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.white)
+                                            .font(.system(size: 15, weight: .bold))
+
+                                    }
+                                    
+                                    VStack(alignment : .leading) {
+                                        Text("Free Trial")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(Color("text-bold"))
+                                            .padding(.leading, 5)
+                                        
+                                        let daysRemaining = currentUser.daysRemainingInFreeTrial(from: currentUser.user.dateCreated, trialLengthInDays: 7)
+                                        Text("\(daysRemaining) days remaining")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(Color("text-bold"))
+                                            .padding(.leading, 5)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Text("Upgrade")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(Color(.white))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 5)
+                                        .background(Color("toggleOn"))
+                                        .cornerRadius(10)
+
+                                    
+                                }
+                                .padding(.bottom)
+                            }
+                            
+                            
+                        }
+         
+
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+
+                }
+                .background(Color("background-element"))
+                .cornerRadius(25)
+                .shadow(color : Color("shadow-white"), radius : 1, x : -1, y : -1)
+                .shadow(color : Color("shadow-black"), radius : 3, x : 2, y : 2)
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .onAppear { checkoutVM.preparePaymentSheet() }
+            .background(Color("background"))
+            .overlay(
+                Color.black.opacity(showCancelMembership || showProcessing ? 0.5 : 0)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        withAnimation {
+                            showCancelMembership = false
+                        }
+                    }
+            )
+            
+            if showProcessing {
+                ProgressView()
+            }
+            
+            VStack {
+                Spacer()
+                ErrorMessageModal(showErrorMessageModal: $showError, title: errorTitle, message: errorMessage)
+                    .centerGrowingModal(isPresented: showError)
+                Spacer()
+            }
+            
+            if showCancelMembership {
+                CancelMembershipModal()
+                    .centerGrowingModal(isPresented: showCancelMembership)
+            }
+
+        }
+        
+        
+    }
+}
+
+
+
+
+struct CancelMembershipModal : View {
+    @EnvironmentObject var currentUser : CurrentUserViewModel
+    @Environment(\.presentationMode) var presentationMode // Use the environment to access the presentation mode
+
+    var body: some View {
+        VStack(spacing : 0) {
+            HStack {
+                Button {
+                    self.presentationMode.wrappedValue.dismiss()
+                } label: {
+                    Image(systemName : "xmark")
+                        .foregroundColor(Color("text-bold"))
+                        .opacity(0.7)
+                        .frame(width: 30, height: 30)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color("background-element"))
+                        )
+                        .outerShadow()
+                }
+                Spacer()
+                
+                Text("Cancel Membership")
+                    .font(.system(size: 18, weight : .bold))
+                    .foregroundColor(Color("text-bold"))
+                    .offset(x : -10)
+
+
+                Spacer()
 
             }
-            .background(Color("background-element"))
-            .cornerRadius(25)
-            .shadow(color : Color("shadow-white"), radius : 1, x : -1, y : -1)
-            .shadow(color : Color("shadow-black"), radius : 3, x : 2, y : 2)
-            .padding(.horizontal)
+            .padding()
             
+            Text(verbatim: "Are you sure you'd like to cancel? You'll no longer be billed and will lose access to all premium features.")
+                .font(.system(size: 14, weight : .medium))
+                .foregroundColor(Color("text-bold"))
+                .padding(.horizontal)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
             
+
             
-            AccountSettingsSection()
-            
-            Spacer()
-        }
-        .background(Color("background"))
+            HStack(spacing : 15) {
+                
+                
+                Button {
+                    withAnimation {
+                        currentUser.updateUser(data: ["isUserSubscribed" : false])
+                        self.presentationMode.wrappedValue.dismiss()
+                    }
+                                        
+                } label: {
+                    HStack(spacing : 0) {
+                        
+                        Text("Unsubscribe")
+                            .font(.system(size : 16, weight : .bold))
+                            .foregroundColor(.white)
+                    }
+                    .frame( width : 200, height : 40)
+                    .background(Color("toggleOn"))
+                    .cornerRadius(10)
+                    .shadow(color: Color("shadow-black"), radius: 3, x: 2, y: 2)
+                }
+
+            }
+            .padding(.horizontal, 30)
+            .padding(.vertical, 20)
         
+
+        }
+        .frame(width : 350)
+        .background(Color("background"))
+        .cornerRadius(15)
+        .outerShadow()
     }
 }
 
@@ -291,4 +532,5 @@ struct CustomToggleStyle: ToggleStyle {
 
 #Preview {
     SettingsView()
+        .environmentObject( CurrentUserViewModel() )
 }

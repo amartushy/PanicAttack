@@ -70,10 +70,11 @@ class CurrentUserViewModel: ObservableObject {
     @Published var showPrivacyPolicy : Bool = false
     @Published var showAboutUs : Bool = false
     @Published var stripeOnboardingCompleted : Bool = false
-
+    @Published var showSuccessfulPayment = false
+    @Published var showSuccessfulUpload = false
+    
     //Refresh ID to force view updates (Photo selection..)
     @Published var refreshID = UUID()
-
     
     //Handles real-time authentication changes to conditionally display login/home views
     var didChange = PassthroughSubject<CurrentUserViewModel, Never>()
@@ -85,6 +86,8 @@ class CurrentUserViewModel: ObservableObject {
     }
     
     @Published var stripeAccountID : String = ""
+    @Published var isUserSubscribed : Bool = false
+    @Published var freeTrialExpired : Bool = false
     
     var handle: AuthStateDidChangeListenerHandle?
     
@@ -137,6 +140,22 @@ class CurrentUserViewModel: ObservableObject {
         }
     }
     
+    func daysRemainingInFreeTrial(from dateCreated: Date, trialLengthInDays: Int) -> Int {
+        let calendar = Calendar.current
+        
+        // Calculate the end date of the trial by adding the trial length to the creation date
+        guard let trialEndDate = calendar.date(byAdding: .day, value: trialLengthInDays, to: dateCreated) else {
+            print("Error calculating the trial end date.")
+            return 0
+        }
+        
+        // Calculate the number of days from today until the end of the trial
+        let remainingDays = calendar.dateComponents([.day], from: Date(), to: trialEndDate).day ?? 0
+        
+        // If the remaining days are negative, the trial has expired
+        return max(0, remainingDays)
+    }
+    
     func listenForCoreUserChanges(userID: String) {
         database.collection("users").document(userID).addSnapshotListener { [self] snapshot, error in
             guard let document = snapshot else {
@@ -147,6 +166,19 @@ class CurrentUserViewModel: ObservableObject {
             var dateCreated = Date()
             if let dateCreatedTimestamp = document.get("dateCreated") as? Timestamp {
                 dateCreated = dateCreatedTimestamp.dateValue()
+            }
+            
+            // Parse the user's dateCreated from the document
+            if let dateCreatedTimestamp = document.get("dateCreated") as? Timestamp {
+                let dateCreated = dateCreatedTimestamp.dateValue()
+                self.user.dateCreated = dateCreated
+                
+                // Check if 7 days have passed since dateCreated
+                let calendar = Calendar.current
+                if let daysPassed = calendar.dateComponents([.day], from: dateCreated, to: Date()).day, daysPassed >= 7 {
+                    // Here, check if the user is not subscribed and update freeTrialExpired accordingly
+                    self.freeTrialExpired = !(document.get("isUserSubscribed") as? Bool ?? false)
+                }
             }
             
             self.user.balance = document.get("balance") as? Double ?? 0.0
@@ -163,6 +195,7 @@ class CurrentUserViewModel: ObservableObject {
             self.user.id = document.documentID
             self.stripeOnboardingCompleted = document.get("stripeOnboardingCompleted") as? Bool ?? false
             self.stripeAccountID = document.get("stripeAccountID") as? String ?? ""
+            self.isUserSubscribed = document.get("isUserSubscribed") as? Bool ?? false
         }
     }
     
@@ -233,6 +266,38 @@ class CurrentUserViewModel: ObservableObject {
         }
     }
     
+    func updateUserBalance(by amount: Double, for userId: String, completion: @escaping (Bool, String?) -> Void) {
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(userId)
+        
+        db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let userDocument: DocumentSnapshot
+            do {
+                try userDocument = transaction.getDocument(userRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            guard let currentBalance = userDocument.data()?["balance"] as? Double else {
+                let error = NSError(domain: "App", code: 0, userInfo: [NSLocalizedDescriptionKey: "Unable to retrieve current balance from Firestore."])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            let newBalance = currentBalance + amount
+            transaction.updateData(["balance": newBalance], forDocument: userRef)
+            return nil
+        }) { (object, error) in
+            if let error = error {
+                print("Transaction failed: \(error.localizedDescription)")
+                completion(false, error.localizedDescription)
+            } else {
+                print("Transaction successfully committed!")
+                completion(true, nil)
+            }
+        }
+    }
     
     
     
