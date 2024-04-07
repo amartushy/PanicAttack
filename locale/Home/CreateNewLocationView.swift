@@ -84,8 +84,6 @@ struct CreateNewLocationView: View {
                         updateRegion(with: newLocation)
                     }
 
-            
-
             }
             .padding(.horizontal, 30)
             

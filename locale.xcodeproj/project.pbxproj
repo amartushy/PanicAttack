@@ -35,6 +35,7 @@
 		2E758D0B2B93EDF900869390 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E758D0A2B93EDF900869390 /* SettingsView.swift */; };
 		2E758D0D2B93F18100869390 /* DeleteAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E758D0C2B93F18100869390 /* DeleteAccountView.swift */; };
 		2E758D0F2B93F19D00869390 /* ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E758D0E2B93F19D00869390 /* ChangePasswordView.swift */; };
+		2EB375852BC2147F00152970 /* LocationAlertInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB375842BC2147F00152970 /* LocationAlertInfoView.swift */; };
 		2EB666FF2B8ABAB7001335F8 /* CurrentUserViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB666FE2B8ABAB7001335F8 /* CurrentUserViewModel.swift */; };
 		2EB667012B8ABECA001335F8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2EB667002B8ABECA001335F8 /* GoogleService-Info.plist */; };
 		2EB667032B8AC28D001335F8 /* CachedAsyncImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB667022B8AC28D001335F8 /* CachedAsyncImageView.swift */; };
@@ -96,6 +97,7 @@
 		2E758D0C2B93F18100869390 /* DeleteAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeleteAccountView.swift; sourceTree = "<group>"; };
 		2E758D0E2B93F19D00869390 /* ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
 		2E758D102B93F56700869390 /* locale.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = locale.entitlements; sourceTree = "<group>"; };
+		2EB375842BC2147F00152970 /* LocationAlertInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAlertInfoView.swift; sourceTree = "<group>"; };
 		2EB666FE2B8ABAB7001335F8 /* CurrentUserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentUserViewModel.swift; sourceTree = "<group>"; };
 		2EB667002B8ABECA001335F8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		2EB667022B8AC28D001335F8 /* CachedAsyncImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImageView.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 			isa = PBXGroup;
 			children = (
 				2E1477112B82546F00EAF88A /* HomeView.swift */,
+				2EB375842BC2147F00152970 /* LocationAlertInfoView.swift */,
 				2E7352112BAFA3C300F7F2AD /* InfoView.swift */,
 				2EFDE8072B826EA300C624B1 /* CustomSearchBar.swift */,
 				2EFDE8052B826DD000C624B1 /* CreateNewLocationView.swift */,
@@ -369,6 +372,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2E758D0B2B93EDF900869390 /* SettingsView.swift in Sources */,
+				2EB375852BC2147F00152970 /* LocationAlertInfoView.swift in Sources */,
 				2EFDE80C2B82891100C624B1 /* SplashScreen.swift in Sources */,
 				2E7352102BAF3FDD00F7F2AD /* StripeOnboardingViewModel.swift in Sources */,
 				2EFDE8082B826EA400C624B1 /* CustomSearchBar.swift in Sources */,

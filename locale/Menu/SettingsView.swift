@@ -7,7 +7,7 @@
 
 import SwiftUI
 import FirebaseAuth
-
+import Firebase
 
 
 struct SettingsView: View {
@@ -21,6 +21,7 @@ struct SettingsView: View {
     @State var errorTitle : String = "Something went wrong"
     @State var errorMessage : String = "There was an issue processing your payment. Please try again later"
     
+    @State var name : String = ""
     
     var body: some View {
         
@@ -46,6 +47,18 @@ struct SettingsView: View {
                 }
                 .padding()
                 .padding(.bottom)
+
+                HStack {
+                    Text("Profile")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(Color("text-bold"))
+                    .padding(.leading, 5)
+                    
+                    Spacer()
+                }
+                .padding(.leading)
+                
+                ProfileTextField()
 
 
                 HStack {
@@ -238,13 +251,95 @@ struct SettingsView: View {
             }
             
             if showCancelMembership {
-                CancelMembershipModal()
+                CancelMembershipModal(showCancelMembership: $showCancelMembership)
                     .centerGrowingModal(isPresented: showCancelMembership)
             }
+        }
+    }
+}
+
+
+
+struct ProfileTextField : View {
+    
+    @EnvironmentObject var currentUser : CurrentUserViewModel
+        
+    @State var isEditing = false
+
+    // Function to update user's name in Firestore
+    func updateUserProfileName(name: String) {
+        let db = Firestore.firestore()
+        
+        // Assuming 'users' is your collection and 'userID' is the ID for the current user
+        // You'll need to replace 'userID' with the actual ID of the current user
+        let userID = "userID" // You should dynamically fetch the actual user ID
+        
+        db.collection("users").document(userID).updateData([
+            "name": name
+        ]) { err in
+            if let err = err {
+                print("Error updating document: \(err)")
+            } else {
+                print("Document successfully updated")
+            }
+        }
+    }
+    var body: some View {
+        
+        
+        VStack(alignment : .leading) {
+
+            
+            ZStack {
+                
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(Color("background-textfield")
+                        .shadow(.inner(color: .white.opacity(0.8), radius: 1, x: 0, y: -1))
+                        .shadow(.inner(color: .black.opacity(0.3), radius: 2, x: 0, y: 2))
+                    )
+                    .frame(height : 50)
+                    .cornerRadius(15)
+
+                
+                HStack {
+                    
+                    Image(systemName: "person.fill")
+                        .foregroundColor(Color("placeholder"))
+                        .padding(.trailing, 5 )
+                        .padding(.leading)
+                    
+                    
+                    if  currentUser.user.name == "" && !isEditing {
+                    
+                        Text(verbatim : "John Doe")
+                            .font(.custom("SF Pro", size: 16))
+                            .foregroundColor( Color("placeholder"))
+                            .fontWeight(.bold)
+                    }
+                    
+                    
+                    Spacer()
+                }
+                
+                TextField("", text: $currentUser.user.name, onEditingChanged: { isEditing in
+                    self.isEditing = isEditing
+                }, onCommit: {
+                    // This is where you'd handle the submission for older versions of SwiftUI
+                    updateUserProfileName(name: currentUser.user.name)
+                })
+                .frame(height: 40)
+                .foregroundColor(.white)
+                .padding(.leading, 50)
+                .onSubmit {
+                    // For SwiftUI 3.0 and later, handle the submission here
+                    updateUserProfileName(name: currentUser.user.name)
+                }
+
+            }
+
 
         }
-        
-        
+        .padding(.bottom, 30)
     }
 }
 
@@ -255,10 +350,13 @@ struct CancelMembershipModal : View {
     @EnvironmentObject var currentUser : CurrentUserViewModel
     @Environment(\.presentationMode) var presentationMode // Use the environment to access the presentation mode
 
+    @Binding var showCancelMembership : Bool
+    
     var body: some View {
         VStack(spacing : 0) {
             HStack {
                 Button {
+                    showCancelMembership = false
                     self.presentationMode.wrappedValue.dismiss()
                 } label: {
                     Image(systemName : "xmark")
@@ -300,6 +398,7 @@ struct CancelMembershipModal : View {
                     withAnimation {
                         currentUser.updateUser(data: ["isUserSubscribed" : false])
                         self.presentationMode.wrappedValue.dismiss()
+                        showCancelMembership = false
                     }
                                         
                 } label: {
@@ -528,6 +627,9 @@ struct CustomToggleStyle: ToggleStyle {
         }
     }
 }
+
+
+
 
 
 #Preview {

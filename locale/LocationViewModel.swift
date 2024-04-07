@@ -17,23 +17,27 @@ struct LocationAlert : Identifiable, Hashable {
     var lat : Double
     var lng : Double
     var userID : String
+    var userName : String
+    var profilePhoto : String
     var dateSent : Date
 }
 
+let empty_alert = LocationAlert(id: "anonymous", lat: 37.7749, lng: 122.4194, userID: "anonymous", userName : "", profilePhoto: "", dateSent: Date())
+
+
 class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate {
     
-    @Published var locationAlerts: [LocationAlert] = []
+    @Published var locationAlerts: [LocationAlert] = [empty_alert]
     private var locationManager = CLLocationManager()
     @Published var userLocation: CLLocation?
     @Published var locationString = ""
+    @Published var locationToDisplay : LocationAlert = empty_alert
 
-    
     override init() {
         super.init()
         self.locationManager.delegate = self
         self.locationManager.desiredAccuracy = kCLLocationAccuracyBest
         self.locationManager.requestWhenInUseAuthorization()
-        
     }
     
     // Respond to authorization status changes
@@ -65,40 +69,68 @@ class LocationViewModel : NSObject, ObservableObject, CLLocationManagerDelegate 
     
     
     func listenForNearbyAlerts() {
-        print("Fetching all global alerts from the last 24 hours")
+        
+        print("Fetching all global alerts from the last 24 hours within a 10-mile radius")
 
         let db = Firestore.firestore()
         let locationAlertsCollection = db.collection("locationAlerts")
+        let usersCollection = db.collection("users")
 
-        // Calculate the timestamp for 24 hours ago
         let oneDayAgo = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
         let oneDayAgoTimestamp = Timestamp(date: oneDayAgo)
 
-        // Firestore query for documents sent in the last 24 hours
-        locationAlertsCollection
-            .whereField("dateSent", isGreaterThan: oneDayAgoTimestamp)
-            .addSnapshotListener { (querySnapshot, error) in
-                guard let documents = querySnapshot?.documents else {
-                    print("Error fetching documents: \(error!)")
-                    return
-                }
-                
-                let alerts = documents.map { doc -> LocationAlert in
-                    let data = doc.data()
-                    return LocationAlert(
-                        id: doc.documentID,
-                        lat: data["latitude"] as? Double ?? 0,
-                        lng: data["longitude"] as? Double ?? 0,
-                        userID: data["userID"] as? String ?? "",
-                        dateSent: (data["dateSent"] as? Timestamp)?.dateValue() ?? Date()
-                    )
-                }
-                
-                DispatchQueue.main.async {
-                    print("Got global location alerts : \(alerts)")
-                    self.locationAlerts = alerts
+        locationAlertsCollection.whereField("dateSent", isGreaterThan: oneDayAgoTimestamp).getDocuments { (querySnapshot, error) in
+            guard let documents = querySnapshot?.documents else {
+                print("Error fetching documents: \(error!)")
+                return
+            }
+
+            var alerts: [LocationAlert] = []
+            let dispatchGroup = DispatchGroup()
+
+            for doc in documents {
+                let data = doc.data()
+                if let lat = data["latitude"] as? Double, let lng = data["longitude"] as? Double {
+                    let alertLocation = CLLocation(latitude: lat, longitude: lng)
+                    let distanceInMeters = self.userLocation!.distance(from: alertLocation)
+
+                    print(self.userLocation!)
+                    // Convert 10 miles to meters
+                    let tenMilesInMeters = 16093.4
+
+                    if distanceInMeters <= tenMilesInMeters {
+                        let userID = data["userID"] as? String ?? ""
+                        dispatchGroup.enter()
+
+                        usersCollection.document(userID).getDocument { (userDocSnapshot, error) in
+                            guard let userData = userDocSnapshot?.data(), error == nil else {
+                                print("Error fetching user data: \(error!)")
+                                dispatchGroup.leave()
+                                return
+                            }
+
+                            let alert = LocationAlert(
+                                id: doc.documentID,
+                                lat: lat,
+                                lng: lng,
+                                userID: userID,
+                                userName: userData["name"] as? String ?? "Unknown",
+                                profilePhoto: userData["profilePhoto"] as? String ?? "",
+                                dateSent: (data["dateSent"] as? Timestamp)?.dateValue() ?? Date()
+                            )
+
+                            alerts.append(alert)
+                            dispatchGroup.leave()
+                        }
+                    }
                 }
             }
+
+            dispatchGroup.notify(queue: .main) {
+                print("Got location alerts within a 10-mile radius: \(alerts)")
+                self.locationAlerts = alerts
+            }
+        }
     }
 
     

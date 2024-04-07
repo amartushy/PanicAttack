@@ -35,11 +35,15 @@ struct HomeView: View {
         guard let location = location else { return }
         let coordinate = location.coordinate
         
-        region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+        let tenMilesInMeters = 16093.4 * 1.25
+        
+        region = MKCoordinateRegion(center: coordinate, latitudinalMeters: tenMilesInMeters, longitudinalMeters: tenMilesInMeters)
     }
     
     @State var shouldRecenterMap = true
 
+    @State var showAlertDetails = false
+    
     
     var body: some View {
         ZStack {
@@ -50,12 +54,15 @@ struct HomeView: View {
                         showsUserLocation: true,
                         userTrackingMode: .none,
                         annotationItems: locationVM.locationAlerts) { alert in
-                        //                        MapMarker(coordinate: CLLocationCoordinate2D(latitude: alert.lat, longitude: alert.lng), tint: .red)
-                        // Or use MapAnnotation for more customization
+
                         MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: alert.lat, longitude: alert.lng)) {
-                            // Custom annotation view
-//                            CustomMarkerView()
-                            ProfilePhotoOrInitial(profilePhoto: "", fullName: alert.userID, radius: 40, fontSize: 20)
+
+                            Button {
+                                showAlertDetails = true
+                                locationVM.locationToDisplay = alert
+                            } label: {
+                                AlertAnnotation(profilePhoto: alert.profilePhoto, fullName: alert.userID)
+                            }
                         }
                     }
                     .onChange(of: locationVM.userLocation) { _, newLocation in
@@ -73,6 +80,11 @@ struct HomeView: View {
                                       region : $region
                     )
                 }
+                .sheet(isPresented: $showAlertDetails, content: {
+                    LocationAlertInfoView(showAlertInfo : $showAlertDetails, locationAlert:locationVM.locationToDisplay)
+                        .presentationDetents([.height(350)])
+                        .edgesIgnoringSafeArea(.bottom)
+                })
                 
                 ZStack {
                     VStack(alignment : .center) {
@@ -411,7 +423,12 @@ struct CustomMarkerView: View {
 }
 
 
-
+//
 //#Preview {
 //    HomeView()
+//        .environmentObject(LocationViewModel())
+//        .environmentObject(CurrentUserViewModel())
+//        .environmentObject(VideoUploadViewModel())
+//        .environmentObject(StripeOnboardingViewModel())
+//
 //}
